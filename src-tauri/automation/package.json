@@ -1,0 +1,13 @@
+{
+  "name": "automation-sidecar",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Playwright sidecar for Tauri app",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "playwright-core": "^1.42.0"
+  }
+}
