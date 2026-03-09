@@ -22,7 +22,82 @@ body {
   overflow-y: auto;
 }
 
-.app-container {
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  background-color: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sidebar-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #fff, var(--text-secondary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0.75rem 1.5rem;
+  color: var(--text-secondary);
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.sidebar-icon {
+  font-size: 1.1rem;
+}
+
+.sidebar-link:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-link.active {
+  background: rgba(107, 76, 255, 0.1);
+  color: var(--accent);
+  border-right: 3px solid var(--accent);
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background-color: var(--bg-main);
+}
+
+.page-container {
   max-width: 900px;
   margin: 0 auto;
   padding: 2rem;
@@ -84,21 +159,26 @@ body {
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--text-secondary);
+  line-height: 20px;
+  min-height: 20px;
 }
 
-select, input[type="text"], input[type="file"] {
+select, input[type="text"], input[type="file"], input[type="number"], .form-control {
   background: var(--bg-main);
   border: 1px solid var(--border-color);
   color: var(--text-primary);
-  padding: 0.75rem 1rem;
+  padding: 0 1rem;
+  height: 46px;
+  box-sizing: border-box;
   border-radius: 8px;
   font-size: 1rem;
   outline: none;
   font-family: inherit;
   transition: border-color 0.2s;
+  width: 100%;
 }
 
-select:focus, input:focus {
+select:focus, input:focus, .form-control:focus-within {
   border-color: var(--accent);
 }
 

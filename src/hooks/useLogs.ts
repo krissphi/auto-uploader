@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { LogEntry } from "../types";
 
-export function useLogs() {
+export function useLogs(onFinished?: () => void) {
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: 1, type: 'info', message: 'System ready. Waiting for configuration.', time: new Date().toLocaleTimeString() }
   ]);
@@ -26,24 +26,48 @@ export function useLogs() {
   }, [logs]);
 
   useEffect(() => {
-    const setupListeners = async () => {
-      const unlistenLog = await listen<string>('log', (event) => {
-        addLog('info', event.payload);
-      });
-      const unlistenErr = await listen<string>('log_error', (event) => {
-        addLog('error', event.payload);
-      });
+    let isMounted = true;
+    let unlistenLog: () => void;
+    let unlistenErr: () => void;
+    let unlistenFin: () => void;
+    let unlistenAutoFin: () => void;
 
-      return () => {
-        unlistenLog();
-        unlistenErr();
-      };
+    listen<string>('log', (event) => {
+      addLog('info', event.payload);
+    }).then(unlisten => {
+      if (!isMounted) unlisten();
+      else unlistenLog = unlisten;
+    });
+
+    listen<string>('log_error', (event) => {
+      addLog('error', event.payload);
+    }).then(unlisten => {
+      if (!isMounted) unlisten();
+      else unlistenErr = unlisten;
+    });
+
+    listen<string>('clipper_finished', () => {
+      if (onFinished) onFinished();
+    }).then(unlisten => {
+      if (!isMounted) unlisten();
+      else unlistenFin = unlisten;
+    });
+
+    listen<string>('automation_finished', () => {
+      if (onFinished) onFinished();
+    }).then(unlisten => {
+      if (!isMounted) unlisten();
+      else unlistenAutoFin = unlisten;
+    });
+
+    return () => {
+      isMounted = false;
+      if (unlistenLog) unlistenLog();
+      if (unlistenErr) unlistenErr();
+      if (unlistenFin) unlistenFin();
+      if (unlistenAutoFin) unlistenAutoFin();
     };
-
-    let cleanup: () => void;
-    setupListeners().then(f => cleanup = f);
-    return () => { if(cleanup) cleanup(); };
-  }, [addLog]);
+  }, [addLog, onFinished]);
 
   return { logs, logsEndRef, addLog, clearLogs };
 }

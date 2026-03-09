@@ -98,6 +98,12 @@ const PLATFORM_HANDLERS = {
                  const videoTitle = video.title || path.parse(videoPath).name; // Use custom title, or fallback to file name (without extension)
                  const scheduleTime = times[i] || '00:00'; 
                  
+                 const stateMarkerPath = `${videoPath}.${platform}.done`;
+                 if (fs.existsSync(stateMarkerPath)) {
+                     logSuccess(`[Video ${i+1}/${videos.length}] "${videoTitle}" already uploaded to ${platform}. Skipping!`);
+                     continue;
+                 }
+                 
                  logInfo(`Uploading [Video ${i+1}/${videos.length}] "${videoTitle}" to ${platform} for ${uploadDate} at ${scheduleTime}...`);
                  
                  // Format comma-separated tags into actual hashtags separated by newlines
@@ -123,6 +129,9 @@ const PLATFORM_HANDLERS = {
                  
                  // Inject logic to separate handler
                  await handler(page, videoParams, commonUtils);
+                 
+                 // Mark as done after successful upload
+                 fs.writeFileSync(stateMarkerPath, new Date().toISOString());
                  
                  logSuccess(`Finished uploading [Video ${i+1}/${videos.length}] to ${platform}.`);
                  logInfo('Taking a brief pause before next file...');

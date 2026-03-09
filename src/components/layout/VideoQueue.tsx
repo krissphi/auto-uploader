@@ -1,5 +1,6 @@
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { VideoEntry } from "../../types";
+import { useStorage } from "../../hooks/useStorage";
 
 interface VideoQueueProps {
   videos: VideoEntry[];
@@ -7,10 +8,8 @@ interface VideoQueueProps {
   selectVideos: () => void;
   removeVideo: (index: number) => void;
   updateVideoTitle: (index: number, title: string) => void;
-  titleTemplates: string[];
   selectedTagTemplate: string;
   setSelectedTagTemplate: (val: string) => void;
-  tagTemplates: string[];
 }
 
 export const VideoQueue = ({
@@ -19,11 +18,12 @@ export const VideoQueue = ({
   selectVideos,
   removeVideo,
   updateVideoTitle,
-  titleTemplates,
   selectedTagTemplate,
-  setSelectedTagTemplate,
-  tagTemplates
+  setSelectedTagTemplate
 }: VideoQueueProps) => {
+  const [titleTemplates] = useStorage<string[]>("saved_title_templates", [""], ["saved_title_template"]);
+  const [tagTemplates] = useStorage<string[]>("saved_tag_templates", [""], ["saved_upload_tags"]);
+  
   return (
     <div className="card">
         <h2>2. Videos Queue & Details</h2>
