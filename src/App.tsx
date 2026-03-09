@@ -8,6 +8,7 @@ import { AutoClipper } from "./components/pages/AutoClipper";
 import { AutoUploader } from "./components/pages/AutoUploader";
 import { FilesPage } from "./components/pages/Files";
 import { SettingsPage } from "./components/pages/Settings";
+import { BRollManager } from "./components/pages/BRollManager";
 
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('auto-clipper');
@@ -36,10 +37,21 @@ function App() {
       <Sidebar currentPage={currentPage} setPage={setCurrentPage} />
       
       <main className="main-content">
-        {currentPage === 'auto-clipper' && <AutoClipper />}
-        {currentPage === 'auto-uploader' && <AutoUploader />}
-        {currentPage === 'files' && <FilesPage />}
-        {currentPage === 'settings' && <SettingsPage />}
+        <div style={{ display: currentPage === 'auto-clipper' ? 'block' : 'none', height: '100%' }}>
+          <AutoClipper />
+        </div>
+        <div style={{ display: currentPage === 'auto-uploader' ? 'block' : 'none', height: '100%' }}>
+          <AutoUploader />
+        </div>
+        <div style={{ display: currentPage === 'broll-manager' ? 'block' : 'none', height: '100%' }}>
+          <BRollManager />
+        </div>
+        <div style={{ display: currentPage === 'files' ? 'block' : 'none', height: '100%' }}>
+          <FilesPage />
+        </div>
+        <div style={{ display: currentPage === 'settings' ? 'block' : 'none', height: '100%' }}>
+          <SettingsPage />
+        </div>
       </main>
     </div>
   );

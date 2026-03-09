@@ -1,6 +1,6 @@
 
 
-export type PageKey = 'auto-clipper' | 'auto-uploader' | 'files' | 'settings';
+export type PageKey = 'auto-clipper' | 'auto-uploader' | 'files' | 'settings' | 'broll-manager';
 
 interface SidebarProps {
   currentPage: PageKey;
@@ -11,6 +11,7 @@ export const Sidebar = ({ currentPage, setPage }: SidebarProps) => {
   const menuItems: { id: PageKey; label: string; icon: string }[] = [
     { id: 'auto-clipper', label: 'Auto Clipper', icon: '✂️' },
     { id: 'auto-uploader', label: 'Auto Uploader', icon: '🚀' },
+    { id: 'broll-manager', label: 'B-Roll Assets', icon: '🎞️' },
     { id: 'files', label: 'Files & Batches', icon: '📁' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
@@ -18,7 +19,7 @@ export const Sidebar = ({ currentPage, setPage }: SidebarProps) => {
   return (
     <div className="sidebar">
       <div className="sidebar-header">
-        <h2>ContentGenius</h2>
+        <h2>KlipKlop v2</h2>
       </div>
       <nav className="sidebar-nav">
         {menuItems.map((item) => (

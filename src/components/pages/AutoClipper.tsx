@@ -127,10 +127,13 @@ export const AutoClipper = () => {
                             className="form-control"
                         >
                             <option>Smart Auto (AI Heuristics)</option>
+                            <option>Split B-Roll ASMR</option>
                             <option>Dual Split (Left Top, Right Bottom)</option>
                             <option>Center Crop (Fill)</option>
                             <option>Game Stream (Face on Bottom Left)</option>
                             <option>Game Stream (Face on Bottom Right)</option>
+                            <option>Game Stream (Face on Top Left)</option>
+                            <option>Game Stream (Face on Top Right)</option>
                             <option>Fit Blur Zoom 1.5x</option>
                             <option>Fit Blur (Legacy)</option>
                         </select>

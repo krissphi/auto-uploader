@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 
 import { useStorage } from "../../hooks/useStorage";
 import { useLogs } from "../../hooks/useLogs";
@@ -30,6 +31,7 @@ export const AutoUploader = () => {
   const [selectedTagTemplate, setSelectedTagTemplate] = useState<string>("");
   
   const [isRunning, setIsRunning] = useState(false);
+  const [isSetup, setIsSetup] = useState<boolean | null>(null); // null=checking, false=not ready, true=ready
 
   const { logs, logsEndRef, addLog, clearLogs } = useLogs(() => setIsRunning(false));
 
@@ -40,6 +42,16 @@ export const AutoUploader = () => {
   useEffect(() => {
     // Sync isRunning state with actual Tauri backend on component mount
     invoke<boolean>('check_running').then(setIsRunning).catch(console.error);
+    // Check if playwright-core is installed
+    invoke<boolean>('check_automation_setup').then(setIsSetup).catch(() => setIsSetup(false));
+  }, []);
+
+  useEffect(() => {
+    const unlisten = listen('setup_finished', () => {
+      setIsSetup(true);
+      setIsRunning(false);
+    });
+    return () => { unlisten.then(f => f()); };
   }, []);
 
   useEffect(() => {
@@ -80,37 +92,6 @@ export const AutoUploader = () => {
     }
   };
 
-  const handleTagTemplateChange = (index: number, value: string) => {
-    const newTemplates = [...tagTemplates];
-    newTemplates[index] = value;
-    setTagTemplates(newTemplates);
-  };
-
-  const addTagTemplate = () => {
-    setTagTemplates([...tagTemplates, ""]);
-  };
-
-  const removeTagTemplate = (index: number) => {
-    const newTemplates = tagTemplates.filter((_, i) => i !== index);
-    if (newTemplates.length === 0) newTemplates.push("");
-    setTagTemplates(newTemplates);
-  };
-
-  const handleTitleTemplateChange = (index: number, value: string) => {
-    const newTemplates = [...titleTemplates];
-    newTemplates[index] = value;
-    setTitleTemplates(newTemplates);
-  };
-
-  const addTitleTemplate = () => {
-    setTitleTemplates([...titleTemplates, ""]);
-  };
-
-  const removeTitleTemplate = (index: number) => {
-    const newTemplates = titleTemplates.filter((_, i) => i !== index);
-    if (newTemplates.length === 0) newTemplates.push("");
-    setTitleTemplates(newTemplates);
-  };
 
   const togglePlatform = (id: string) => {
     if (selectedPlatforms.includes(id)) {
@@ -140,6 +121,20 @@ export const AutoUploader = () => {
       newVideos[index] = { ...newVideos[index], title };
       return newVideos;
     });
+  };
+
+  const startSetup = async () => {
+    setIsRunning(true);
+    clearLogs();
+    addLog('info', 'Installing automation dependencies via pnpm install...');
+    addLog('info', 'This may take a few minutes on first run. Please wait.');
+    try {
+      await invoke('setup_automation');
+      addLog('success', 'Installation started. Waiting for completion...');
+    } catch (err: any) {
+      addLog('error', 'Setup failed: ' + err);
+      setIsRunning(false);
+    }
   };
 
   const startAutomation = async () => {
@@ -261,11 +256,23 @@ export const AutoUploader = () => {
         />
 
         <div className="actions" style={{ marginTop: '20px' }}>
-          {!isRunning ? (
+          {isSetup === null && (
+            <button className="btn-primary" disabled style={{ opacity: 0.6 }}>⏳ Checking setup...</button>
+          )}
+          {isSetup === false && !isRunning && (
+            <button className="btn-primary" onClick={startSetup}>
+              ⚙️ Setup Automation
+            </button>
+          )}
+          {isSetup === false && isRunning && (
+            <button className="btn-primary" disabled style={{ opacity: 0.7 }}>⏳ Installing playwright-core...</button>
+          )}
+          {isSetup === true && !isRunning && (
             <button className="btn-primary" onClick={startAutomation}>
               🚀 Start Automation
             </button>
-          ) : (
+          )}
+          {isSetup === true && isRunning && (
             <button className="btn-danger" onClick={stopAutomation}>
               ⏹ Stop Execution
             </button>

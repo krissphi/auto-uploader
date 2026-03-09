@@ -155,14 +155,27 @@ async function main() {
         // Note: Full complex heatmap algorithm logic simulated/simplified for now
         // In reality, this calculates peaks and handles overlap
         if (heatmap.length > 0) {
-            // Sort heatmap by value descending (simplistic peak-finding)
-            const sortedHeat = [...heatmap].sort((a,b) => b.value - a.value);
+            // Sort heatmap by value descending
+            const sortedHeat = [...heatmap].sort((a, b) => b.value - a.value);
+            
+            // Random Pick: Ambil kandidat 2x lipat dari jumlah yang diminta (min 10)
+            const poolSize = Math.max(clipCount * 2, 10);
+            let topCandidates = sortedHeat.slice(0, poolSize);
+            
+            // Acak urutan kandidat
+            topCandidates.sort(() => Math.random() - 0.5);
+
             let selected = [];
-            for (let heat of sortedHeat) {
+            for (let heat of topCandidates) {
                 if (selected.length >= clipCount) break;
-                // Add padding to heat peak
-                let s = Math.max(0, heat.start_time - 5);
-                let dur = Math.max(shortMin, Math.min(shortMax, heat.end_time - heat.start_time + 13));
+                
+                // Random Shift: Geser waktu mulai secara acak (-2 hingga -8 detik dari titik tertinggi)
+                const startShift = Math.floor(Math.random() * 7) + 2; // Acak 2 hingga 8
+                let s = Math.max(0, heat.start_time - startShift);
+                
+                // Random Shift: Durasi yang bervariasi
+                const durationShift = Math.floor(Math.random() * 5); // Acak 0 hingga 4 detik ekstra
+                let dur = Math.max(shortMin, Math.min(shortMax, heat.end_time - heat.start_time + 13 + durationShift));
                 
                 // Overlap check simplistic
                 let overlap = selected.some(c => (s < c.start + c.dur && s + dur > c.start));
@@ -170,7 +183,10 @@ async function main() {
                     selected.push({ start: s, dur: dur });
                 }
             }
-            clips = selected.map((c, i) => ({ id: i+1, start: Math.floor(c.start), end: Math.floor(c.start + c.dur) }));
+
+            // Jika masih kurang dari target, ambil sisa dari yang belum terpilih (bisa ditambahkan logika fallback jika terlalu ketat, tapi untuk saat ini cukup)
+            
+            clips = selected.map((c, i) => ({ id: i + 1, start: Math.floor(c.start), end: Math.floor(c.start + c.dur) }));
         } else {
             // Fallback: Spread out clips randomly-evenly across the entire video duration
             log(`No heatmap found (video might be new or doesn't have engagement data yet). using Smart Spread Fallback...`);
@@ -233,12 +249,33 @@ async function main() {
         }
 
         // ---------------------------------------------------------------------------------
+        // 1c. Siapkan Asset B-Roll (Untuk Mode Split B-Roll ASMR)
+        // ---------------------------------------------------------------------------------
+        const brollDir = path.resolve(process.cwd(), outputDir, 'broll');
+        let availableBrolls = [];
+        if (fs.existsSync(brollDir)) {
+            availableBrolls = fs.readdirSync(brollDir).filter(f => f.endsWith('.mp4') || f.endsWith('.webm'));
+            if (availableBrolls.length > 0) {
+                log(`[B-Roll] Ditemukan ${availableBrolls.length} video cadangan di ${outputDir}/broll/ untuk layar bawah.`);
+            }
+        }
+
+        // ---------------------------------------------------------------------------------
         // 2 & 3. Process each clip
         // ---------------------------------------------------------------------------------
         for (let i = 0; i < clips.length; i++) {
             const clip = clips[i];
             const finalFile = path.join(groupFinalDir, `${baseName}_${String(clip.start).padStart(6, '0')}.mp4`);
             
+            // Generate Random B-Roll Data for this clip iteration
+            let brollFileExists = false;
+            let randomBrollData = null;
+            if (availableBrolls.length > 0) {
+                const randomBrollName = availableBrolls[Math.floor(Math.random() * availableBrolls.length)];
+                randomBrollData = path.join(brollDir, randomBrollName);
+                brollFileExists = true;
+            }
+
             if (fs.existsSync(finalFile)) {
                 log(`Clip ${i+1}/${clips.length}: Already exists, skipping download and render.`);
                 continue;
@@ -309,6 +346,13 @@ async function main() {
                 let fgLayer = `[0:v]scale=${fgScale}:force_original_aspect_ratio=decrease[fg];`;
                 
                 vf = `${blurT}${fgLayer}[bg][fg]overlay=(main_w-overlay_w)/2:(main_h-overlay_h)/2[base]`;
+            } else if (effectiveScaleMode.includes("Split B-Roll") && brollFileExists) {
+                // Video utama di atas (Layar atas)
+                let halfH = Math.round(tH / 2);
+                vf = `[0:v]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[top];`;
+                // Video B-Roll ASMR di bawah (Layar bawah) - menggunakan input stream kedua (1:v)
+                vf += `[1:v]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom];`;
+                vf += `[top][bottom]vstack[base]`;
             } else if (effectiveScaleMode.includes("Dual Split")) {
                 let leftWidth = `iw*0.60`;
                 let rightWidth = `iw*0.50`;
@@ -322,19 +366,28 @@ async function main() {
                 vf = `[0:v]scale=${tW}:${tH}:force_original_aspect_ratio=increase,crop=${tW}:${tH}[base]`;
             } else if (effectiveScaleMode.startsWith("Game Stream")) {
                 let halfH = Math.round(tH / 2);
-                
-                // Usually cam face is bottom left or right, occupying 25% width and 35% height of the full screen.
-                // Assuming bottom left (x=0, y=ih*0.65) or bottom right (x=iw*0.75, y=ih*0.65)
-                let camX = effectiveScaleMode.includes("Right") ? "iw*0.75" : "0";
-                let camY = "ih*0.65"; // bottom 35% height approximately
-                
-                // Top Crop (Layar atas) diisi dengan Facecam yang kita crop dari pojok
-                vf = `[0:v]crop=w=iw*0.25:h=ih*0.35:x=${camX}:y=${camY}[cam_face];`;
-                // Bottom Crop (Layar bawah) diisi dengan Game Play murni (Misal fokus potong area tengah penuh 50%)
-                vf += `[0:v]crop=w=iw*0.5:h=ih:x=iw*0.25:y=0[game_center];`;
-                vf += `[cam_face]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[top];`;
-                vf += `[game_center]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom];`;
-                vf += `[top][bottom]vstack[base]`;
+                const isRight = effectiveScaleMode.includes("Right");
+                const isTop = effectiveScaleMode.includes("Top");
+
+                if (isTop) {
+                    // Face on Top: Facecam crop pojok atas, Gameplay di bawah
+                    let camX = isRight ? "iw*0.75" : "0";
+                    let camY = "0"; // top of screen
+                    vf = `[0:v]crop=w=iw*0.25:h=ih*0.35:x=${camX}:y=${camY}[cam_face];`;
+                    vf += `[0:v]crop=w=iw*0.5:h=ih:x=iw*0.25:y=0[game_center];`;
+                    vf += `[cam_face]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[top];`;
+                    vf += `[game_center]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom];`;
+                    vf += `[top][bottom]vstack[base]`;
+                } else {
+                    // Face on Bottom (existing): Facecam crop pojok bawah, Gameplay di atas
+                    let camX = isRight ? "iw*0.75" : "0";
+                    let camY = "ih*0.65"; // bottom 35% height approximately
+                    vf = `[0:v]crop=w=iw*0.25:h=ih*0.35:x=${camX}:y=${camY}[cam_face];`;
+                    vf += `[0:v]crop=w=iw*0.5:h=ih:x=iw*0.25:y=0[game_center];`;
+                    vf += `[cam_face]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom_face];`;
+                    vf += `[game_center]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[top_game];`;
+                    vf += `[top_game][bottom_face]vstack[base]`;
+                }
             } else {
                 // Default handling fallback
                  vf = `[0:v]scale=${tW}:${tH}:force_original_aspect_ratio=decrease,pad=${tW}:${tH}:(ow-iw)/2:(oh-ih)/2[base]`;
@@ -366,10 +419,13 @@ async function main() {
                 // Escape Windows path for ffmpeg subtitles filter (needs double escaping \\ -> \\\\, : -> \\:)
                 let safeVtt = localClipVtt.replace(/\\/g, '\\\\').replace(/:/g, '\\:');
                 // Alignment=2 (Bottom Center), MarginV=300 lifts it safely to lower-middle.
-                vf += `;[text_stage]subtitles='${safeVtt}':force_style='Fontname=Arial,Fontsize=18,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2,Shadow=0,Alignment=2,MarginV=300'[final]`;
+                vf += `;[text_stage]subtitles='${safeVtt}':force_style='Fontname=Arial,Bold=1,Fontsize=24,PrimaryColour=&H0000FFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=3,Shadow=0,Alignment=2,MarginV=300'[final]`;
             } else {
                 vf += `;[text_stage]copy[final]`;
             }
+
+            // Target dimensions & input mapping
+            let mapAudio = brollFileExists && effectiveScaleMode.includes("Split B-Roll") ? '0:a?' : '0:a?';
 
             // Try rendering with hardware acceleration cascade
             const encoders = ['h264_nvenc', 'h264_qsv', 'h264_amf', 'libx264'];
@@ -381,13 +437,30 @@ async function main() {
                 try {
                     let lastLoggedPercent = -100;
                     await new Promise((resolve, reject) => {
-                        const ffArgs = [
-                            '-y', '-i', sourceFile, 
+                        let ffArgs = [
+                            '-y', '-i', sourceFile
+                        ];
+
+                        if (brollFileExists && effectiveScaleMode.includes("Split B-Roll")) {
+                            // Random seek offset agar tiap klip pakai bagian berbeda dari B-Roll
+                            // Video B-Roll kita ~10 menit (600 detik), seek max 480 detik (menyisakan 2 menit buffer)
+                            const randomBrollOffset = Math.floor(Math.random() * 480);
+                            ffArgs.push('-ss', String(randomBrollOffset)); // seek ke titik acak
+                            ffArgs.push('-stream_loop', '-1'); // loop dari titik tersebut jika perlu
+                            ffArgs.push('-i', randomBrollData);
+                        }
+                        
+                        // Durasi output dibatasi tepat sesuai klip — KRITIS untuk Split B-Roll
+                        // agar -stream_loop -1 tidak menyebabkan infinite encoding
+                        const clipDuration = (clip.end - clip.start).toFixed(3);
+
+                        ffArgs.push(
                             '-filter_complex', vf, 
-                            '-map', '[final]', '-map', '0:a?', 
+                            '-map', '[final]', '-map', mapAudio,
+                            '-t', clipDuration,
                             '-c:v', encoder, '-preset', 'fast', 
                             '-c:a', 'aac', '-b:a', '160k', finalFile
-                        ];
+                        );
                         
                         log(`Render clip ${i+1}/${clips.length}: Attempting with encoder ${encoder}...`);
                         const ff = spawn(ffmpegPath, ffArgs);
@@ -401,7 +474,7 @@ async function main() {
                                 const [_, h, m, s] = timeMatch;
                                 const sec = parseInt(h)*3600 + parseInt(m)*60 + parseFloat(s);
                                 const percent = Math.min(100, Math.round((sec / (clip.end - clip.start)) * 100));
-                                if (percent >= lastLoggedPercent + 5 || percent === 100) {
+                                if (percent >= lastLoggedPercent + 25 || percent === 100) {
                                     log(`Render clip ${i+1}/${clips.length} [${encoder}]: ${percent}%`);
                                     lastLoggedPercent = percent;
                                 }

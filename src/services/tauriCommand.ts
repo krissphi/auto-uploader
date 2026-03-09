@@ -63,13 +63,10 @@ export const runAutomation = async (
     addLog('info', `Starting upload batch... Target Date: ${config.date}`);
     
     try {
-        await invoke('run_playwright', { 
-            configJson: JSON.stringify(config) 
-        });
+        await invoke('start_automation', { config });
         addLog('success', "Batch Automation completed entirely.");
     } catch (err: any) {
         addLog('error', "Automation Failed: " + err);
-    } finally {
         setIsRunning(false);
     }
 };

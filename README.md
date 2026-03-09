@@ -1,68 +1,102 @@
-# Upload Scheduler (Video Auto-Uploader & Scheduler)
+# KlipKlop v2
 
-Upload Scheduler is a powerful desktop application built with Tauri, React, and Playwright that automates the process of uploading and scheduling short videos across multiple major social media platforms without needing official API integrations.
+A desktop application that automates the short-form content pipeline: downloading source videos, generating viral clips, and scheduling uploads across social media platforms. No API keys required.
 
-By orchestrating a headless (or headed) browser session, this app mimics human interaction to upload your videos natively, bypassing the limitations and quotas of standard APIs.
+Built with Tauri (Rust), React, Node.js, Playwright, FFmpeg, and yt-dlp.
 
-## 🌟 Supported Platforms
-*   **YouTube** (Shorts / Regular)
-*   **Instagram** (Reels)
-*   **TikTok**
-*   **Facebook** (Reels)
-*   **Meta Business Suite** (Combined FB & IG Reels Scheduling)
+---
 
-## ✨ Key Features
-*   **No API Keys Required:** Relies entirely on secure, localized web browser automation. 
-*   **Cross-Platform Auto Publishing:** Upload identical videos across five different platforms with just one click.
-*   **Intelligent Scheduling Setup:** Support for scheduling uploads down to the minute. Automatically handles complex web UI components (e.g., custom Time inputs and Calendars) natively.
-*   **Global Templates:** Create and select from multiple pre-saved templates for Titles, Descriptions, and Tags.
-*   **Sequential Uploading:** Queues files and uploads sequentially – optimized for slow or unstable internet connections.
-*   **Interactive Playwright Integration:** Watch the application work in the background, or interact directly when platforms prompt for manual verifications using your locally logged-in browser profiles (e.g., Microsoft Edge).
+## Supported Platforms
 
-## 🚀 Tech Stack
-*   **Frontend:** React, TypeScript, Vite, TailwindCSS
-*   **Backend:** Rust, Tauri
-*   **Automation:** Playwright, Node.js
+- YouTube Shorts
+- Instagram Reels
+- TikTok
+- Facebook Reels
+- Meta Business Suite
 
-## ⚙️ Prerequisites
-1.  **Node.js** (v18+)
-2.  **pnpm** (Package Manager)
-3.  **Rust & Cargo** (For Tauri backend compilation)
-4.  **Microsoft Edge** (Or Google Chrome) installed, as the automation hooks into existing browser user data directories to retain your login sessions.
+---
 
-## 📦 Installation & Setup
+## Features
 
-1.  **Clone / Download the Repository**
-2.  **Install Dependencies**
-    ```bash
-    pnpm install
-    # Wait for all frontend and node dependencies to finish downloading
-    ```
-3.  **Initialize Playwright Browsers (Optional but recommended)**
-    ```bash
-    npx playwright install
-    ```
+**Auto Clipper**  
+Downloads any YouTube video and extracts the most-replayed moments using YouTube heatmap data. Applies random start time offsets and clip duration variations to ensure each generated clip is unique. Supports multiple scale modes (Center Crop, Fit Blur, Split B-Roll ASMR, Dual-Split). Subtitles are burned automatically from YouTube auto-captions.
 
-## 🛠️ Usage (Development Mode)
+**B-Roll Asset Manager**  
+One-click scraper that automatically searches YouTube for satisfying/ASMR background videos using built-in copyright-free keyword templates. Downloads only 10 minutes of footage per video at 720p (video-only, no audio). Uses a 5x candidate pool to ensure the requested count is always fulfilled.
 
-To run the application locally in development mode:
+**Files & Batches**  
+Organizes clips by source video. Auto Batch moves clips into upload batches (max 7 per batch) automatically. Archive moves completed clips out of the workspace without deleting them.
+
+**Auto Uploader**  
+Browser automation via Playwright using your existing logged-in browser profile. Uploads sequentially with configurable scheduling per platform. Supports title, description, and tag templates.
+
+---
+
+## Prerequisites
+
+- Node.js v18+
+- pnpm (`npm i -g pnpm`)
+- Rust and Cargo
+- [yt-dlp](https://github.com/yt-dlp/yt-dlp/releases/latest)
+- [FFmpeg](https://ffmpeg.org/download.html)
+- Microsoft Edge or Chrome (must be logged into target platforms)
+
+---
+
+## Production Setup (After Install)
+
+Jika Anda menggunakan file installer (.exe/.msi), ikuti langkah-langkah ini agar fitur uploader/clipper berfungsi:
+
+1. **Copy Folder Automation**  
+   Salin folder `automation/` ke direktori instalasi aplikasi (berdampingan dengan `KlipKlop.exe`).
+   *Struktur folder harus seperti ini:*
+   ```text
+   C:\Program Files\KlipKlop v2\
+   ├── KlipKlop.exe
+   └── automation\
+       ├── index.js
+       ├── clipper.js
+       └── package.json
+   ```
+
+2. **Setup Dependencies**  
+   Buka aplikasi, navigasi ke halaman **Auto Uploader**, dan klik tombol **"⚙️ Setup Automation"**.  
+   Aplikasi akan menjalankan `pnpm install` secara otomatis di latar belakang untuk memasang library yang diperlukan (*playwright-core*).
+
+---
+
+## Development
 
 ```bash
+pnpm install
 pnpm tauri dev
 ```
-This will compile the Rust backend and spin up the Vite React frontend.
 
-## 📝 How it Works (Usage Workflow)
-1. **Add Videos:** Drag and drop, or browse to add videos into the queue list.
-2. **Select Accounts / Profiles:** Define which browser directory contains the active login sessions for the platforms you wish to target.
-3. **Configure the Time:** Setup your target base date and desired posting times.
-4. **Choose Target Platforms:** Tick the boxes for the platforms you want to upload to (e.g. YouTube, TikTok, Meta Business Suite).
-5. **Start Automation:** Click "Start Automation". The app will sequentially launch a browser window, navigate to the specific Creator Studio pages, upload the video, fill in descriptions based on your Global Tags, pick your schedule time, and submit!
+---
 
-## ⚠️ Important Notes
-*   **Keep Logged In:** Since this application uses browser automation instead of API keys, it requires the selected browser profile to already be logged into YouTube/TikTok/Facebook/Instagram.
-*   **UI Changes:** Social media platforms update their UI frequently. If the automation suddenly gets stuck (e.g., "Cannot find Add Video button"), the Playwright CSS/XPath locators in `src-tauri/automation/index.js` might need to be adjusted to match the new web layouts.
-*   **Intervention:** Some platforms enforce Captcha checks or account limits. The browser will stay open so you can manually intervene if the automation pauses or errors out.
+## Configuration
 
-## 🤝 Contributing
-Feel free to tweak the automation scripts located in `src-tauri/automation/index.js` or add new platform support!
+On first run, go to the Settings page and set:
+
+- `yt-dlp Path` — full path to yt-dlp.exe
+- `FFmpeg Path` — full path to ffmpeg.exe
+- `Output Directory` — root folder for all generated files
+
+---
+
+## Workflow
+
+1. B-Roll Manager — scrape background videos
+2. Auto Clipper — generate clips from a YouTube URL
+3. Files & Batches — review, rename, archive, and batch clips
+4. Auto Uploader — upload a batch to selected platforms on a schedule
+
+---
+
+## Notes
+
+- **Penting:** Aplikasi ini memerlukan folder `automation/` yang berada di direktori yang sama dengan executable-nya agar logic browser automation dapat berjalan.
+- The uploader uses browser automation, so your browser profile must already be logged into all target platforms.
+- Keep yt-dlp updated regularly to avoid YouTube download errors: `yt-dlp -U`
+- B-Roll videos are downloaded video-only (no audio) to minimize copyright claim risk.
+- If automation gets stuck due to platform UI changes, update the selectors in `src-tauri/automation/index.js`.

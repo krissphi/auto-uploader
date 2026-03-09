@@ -78,29 +78,6 @@ export const FilesPage = () => {
         };
     }, []);
 
-    const handleCreateBatch = async () => {
-        const batchKeys = Object.keys(batches);
-        let maxBatchNum = 0;
-        
-        for (const key of batchKeys) {
-            const numMatch = key.match(/Batch (\d+)/i);
-            if (numMatch && numMatch[1]) {
-                const num = parseInt(numMatch[1], 10);
-                if (num > maxBatchNum) {
-                    maxBatchNum = num;
-                }
-            }
-        }
-        
-        const newBatchName = `Batch ${maxBatchNum + 1}`;
-        const newBatchPath = `${outputDir}\\batches\\${newBatchName}`;
-        try {
-            await createDirAll(newBatchPath);
-            setTriggerRefetch(prev => prev + 1);
-        } catch (err) {
-            console.error(err);
-        }
-    };
 
     const handleAutoBatch = async (fileName: string, group: string) => {
         // Find first batch with < 7 capacity
@@ -144,25 +121,6 @@ export const FilesPage = () => {
         }
     };
 
-    const handleMoveToBatch = async (fileName: string, batchName: string, group: string) => {
-        // Validate batch size
-        if (batches[batchName] && batches[batchName].length >= 7) {
-            alert(`Batch ${batchName} is full! Maximum 7 videos per batch.`);
-            return;
-        }
-
-        const sourceDir = group === "Others" ? `${outputDir}\\final` : `${outputDir}\\final\\${group}`;
-        const source = `${sourceDir}\\${fileName}`;
-        const dest = `${outputDir}\\batches\\${batchName}\\${fileName}`;
-        
-        try {
-            await moveFile(source, dest);
-            setTriggerRefetch(prev => prev + 1);
-        } catch (err) {
-            console.error(err);
-            alert("Failed to move file to batch");
-        }
-    };
 
     const handleRemoveFromBatch = async (fileName: string, batchName: string) => {
         const source = `${outputDir}\\batches\\${batchName}\\${fileName}`;
@@ -237,6 +195,21 @@ export const FilesPage = () => {
         } catch(e) {
             console.error(e);
             alert(`Failed to rename file`);
+        }
+    };
+
+    const handleArchive = async (fileName: string, group: string) => {
+        const sourceDir = group === "Others" ? `${outputDir}\\final` : `${outputDir}\\final\\${group}`;
+        const source = `${sourceDir}\\${fileName}`;
+        const archiveDir = `${outputDir}\\archived`;
+        const dest = `${archiveDir}\\${fileName}`;
+        try {
+            await createDirAll(archiveDir);
+            await moveFile(source, dest);
+            setTriggerRefetch(prev => prev + 1);
+        } catch (err) {
+            console.error(err);
+            alert("Failed to archive file");
         }
     };
 
@@ -340,6 +313,14 @@ export const FilesPage = () => {
                                                     >
                                                         + Auto Batch
                                                     </button>
+                                                    <button 
+                                                        className="text-btn outline-btn" 
+                                                        title="Move to Archived folder (already uploaded)"
+                                                        style={{ display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.8rem", height: "36px", padding: "0 16px", background: "rgba(248, 113, 113, 0.07)", color: "rgba(248, 113, 113, 0.9)", borderColor: "rgba(248, 113, 113, 0.3)", whiteSpace: "nowrap", borderRadius: "4px" }}
+                                                        onClick={() => handleArchive(file, group)}
+                                                    >
+                                                        🗂 Archive
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
@@ -352,11 +333,8 @@ export const FilesPage = () => {
 
                 {/* Batches Configuration */}
                 <div className="card" style={{ display: "flex", flexDirection: "column" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+                    <div style={{ marginBottom: "16px" }}>
                         <h2>Upload Batches</h2>
-                        <button className="text-btn outline-btn" onClick={handleCreateBatch} style={{ padding: "6px 12px", color: "var(--accent)" }}>
-                            + New Batch
-                        </button>
                     </div>
                     
                     <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(350px, 1fr))", gap: "20px", maxHeight: "40vh", overflowY: "auto", paddingRight: "8px", alignItems: "start" }}>
