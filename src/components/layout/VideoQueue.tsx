@@ -1,6 +1,12 @@
+import { useState } from "react";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { VideoEntry } from "../../types";
 import { useStorage } from "../../hooks/useStorage";
+import { VideoThumbnail } from "../shared/VideoThumbnail";
+import { Card } from "../shared/Card";
+import { Button } from "../shared/Button";
+import { Input, Select } from "../shared/Inputs";
+import { TrashIcon, FolderIcon } from "../shared/Icons";
 
 interface VideoQueueProps {
   videos: VideoEntry[];
@@ -23,137 +29,184 @@ export const VideoQueue = ({
 }: VideoQueueProps) => {
   const [titleTemplates] = useStorage<string[]>("saved_title_templates", [""], ["saved_title_template"]);
   const [tagTemplates] = useStorage<string[]>("saved_tag_templates", [""], ["saved_upload_tags"]);
-  
-  return (
-    <div className="card">
-        <h2>2. Videos Queue & Details</h2>
-        <div className="form-group">
-          <button 
-            className="toggle-btn" 
-            onClick={selectVideos}
-            disabled={isRunning}
-            style={{ width: 'fit-content', padding: '0.6rem 1.2rem' }}
-          >
-            + Add Video Files
-          </button>
-        </div>
-        {videos.length > 0 && (
-          <>
-            <div className="video-list">
-            {videos.map((video, i) => (
-              <div key={i} className="video-item" style={{ display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: '16px' }}>
-                <video 
-                  src={convertFileSrc(video.path)}
-                  controls
-                  preload="metadata"
-                  style={{
-                    width: '240px',
-                    height: '135px',
-                    objectFit: 'contain',
-                    backgroundColor: '#000',
-                    borderRadius: '6px',
-                    flexShrink: 0
-                  }}
-                />
-                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                    <span style={{ wordBreak: 'break-all', paddingRight: '12px', fontSize: '0.8rem', lineHeight: '1.4' }}>
-                      {video.path}
-                    </span>
-                    <button onClick={() => removeVideo(i)} disabled={isRunning}>Remove</button>
-                  </div>
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <select
-                      onChange={(e) => {
-                        if (e.target.value !== "") {
-                          updateVideoTitle(i, e.target.value);
-                          e.target.value = ""; 
-                        }
-                      }}
-                      defaultValue=""
-                      disabled={isRunning || titleTemplates.every(t => !t)}
-                      style={{
-                        padding: '6px 12px',
-                        background: 'rgba(107, 76, 255, 0.2)',
-                        border: '1px solid rgba(107, 76, 255, 0.4)',
-                        color: 'var(--accent)',
-                        borderRadius: '4px',
-                        fontSize: '0.8rem',
-                        cursor: isRunning || titleTemplates.every(t => !t) ? 'not-allowed' : 'pointer',
-                        opacity: isRunning || titleTemplates.every(t => !t) ? 0.5 : 1,
-                        outline: 'none',
-                        maxWidth: '220px'
-                      }}
-                    >
-                      <option value="" disabled style={{ color: '#000' }}>-- Use Title Template --</option>
-                      {titleTemplates.map((t, idx) => {
-                        if (!t) return null;
-                        return (
-                          <option key={`title-${idx}`} value={t} style={{ color: '#000' }}>
-                            {t.length > 30 ? t.substring(0, 30) + '...' : t}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
 
-                  <input 
-                    type="text"
-                    placeholder="Custom video title. Leave empty to use default."
-                    value={video.title}
-                    onChange={(e) => updateVideoTitle(i, e.target.value)}
-                    disabled={isRunning}
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '4px',
-                      border: '1px solid rgba(255, 255, 255, 0.2)',
-                      background: 'rgba(0, 0, 0, 0.2)',
-                      color: '#fff',
-                      fontFamily: 'inherit',
-                      fontSize: '0.9rem'
-                    }}
-                  />
-                </div>
-              </div>
+  const [selectedIdx, setSelectedIdx] = useState<number | null>(null);
+
+  // Keep selection valid after removal
+  const safeIdx = selectedIdx !== null && selectedIdx < videos.length ? selectedIdx : null;
+  const selectedVideo = safeIdx !== null ? videos[safeIdx] : null;
+
+  return (
+    <Card 
+      title="2. Videos Queue & Details" 
+      headerAction={
+        <Button
+          variant="outline"
+          onClick={selectVideos}
+          disabled={isRunning}
+          style={{ width: 'fit-content', padding: '0 24px', height: '40px', fontSize: "0.85rem" }}
+        >
+          + Add Video Files
+        </Button>
+      }
+    >
+
+      {videos.length > 0 && (
+        <>
+          {/* ── Row 1: horizontal thumbnail strip ── */}
+          <div style={{
+            display: "flex",
+            gap: "8px",
+            overflowX: "auto",
+            paddingBottom: "8px",
+            marginBottom: "16px",
+            // subtle scrollbar
+            scrollbarWidth: "thin",
+          }}>
+            {videos.map((video, i) => (
+              <VideoThumbnail
+                key={i}
+                filePath={video.path}
+                label={video.path.split(/[\\/]/).pop()}
+                selected={safeIdx === i}
+                onClick={() => setSelectedIdx(safeIdx === i ? null : i)}
+                width={96}
+                height={144}
+              />
             ))}
           </div>
 
-          <div className="form-group" style={{ marginTop: '20px' }}>
-            <label>Tags settings (Applies to all videos above)</label>
-            <select
+          {/* ── Row 2: video player (left) + edit panel (right) ── */}
+          {selectedVideo !== null && safeIdx !== null ? (
+            <div style={{ 
+              display: "flex", 
+              gap: "24px", 
+              width: "100%", 
+              overflow: "hidden",
+              background: "var(--bg-main)",
+              border: "1px solid var(--border-color)",
+              padding: "20px",
+              boxSizing: "border-box",
+              alignItems: "stretch"
+            }}>
+              {/* Left: video player */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <video
+                  key={selectedVideo.path}
+                  src={convertFileSrc(selectedVideo.path)}
+                  controls
+                  autoPlay
+                  preload="auto"
+                  style={{
+                    width: "100%",
+                    maxHeight: "260px",
+                    borderRadius: "4px",
+                    backgroundColor: "#000",
+                    objectFit: "contain",
+                    display: "block",
+                    border: '1px solid rgba(255,255,255,0.05)'
+                  }}
+                />
+              </div>
+
+              {/* Right: edit controls */}
+              <div style={{
+                flex: 1, 
+                minWidth: 0,
+                display: "flex", 
+                flexDirection: "column", 
+                gap: "12px",
+                justifyContent: "center"
+              }}>
+                {/* File path */}
+                <div style={{ fontSize: "0.75rem", color: "var(--text-secondary)", wordBreak: "break-all", lineHeight: 1.4, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <FolderIcon size={12} />
+                  {selectedVideo.path.split(/[\\/]/).pop()}
+                </div>
+
+                {/* Custom title input */}
+                <Input
+                  placeholder="Custom video title..."
+                  value={selectedVideo.title}
+                  onChange={(e) => updateVideoTitle(safeIdx, e.target.value)}
+                  disabled={isRunning}
+                  style={{ height: '40px', fontSize: '0.9rem' }}
+                />
+
+                {/* Title template dropdown */}
+                <Select
+                  onChange={(e) => {
+                    if (e.target.value !== "") {
+                      updateVideoTitle(safeIdx, e.target.value);
+                      e.target.value = "";
+                    }
+                  }}
+                  defaultValue=""
+                  disabled={isRunning || titleTemplates.every(t => !t)}
+                  options={[
+                    { value: "", label: "-- Use Title Template --", disabled: true },
+                    ...titleTemplates.filter(t => !!t).map(t => ({ 
+                      value: t, 
+                      label: t.length > 40 ? t.substring(0, 40) + '...' : t 
+                    }))
+                  ]}
+                  style={{
+                    height: '40px',
+                    fontSize: '0.85rem'
+                  }}
+                />
+
+                {/* Actions */}
+                <div style={{ display: "flex", gap: "8px", marginTop: '8px' }}>
+                    <Button
+                    variant="ghost-danger"
+                    onClick={() => { removeVideo(safeIdx); setSelectedIdx(null); }}
+                    disabled={isRunning}
+                    style={{
+                        flex: 1,
+                        height: "40px",
+                        padding: "0 10px",
+                        textTransform: 'none',
+                    }}
+                    >
+                    <TrashIcon size={14} color="currentColor" />
+                    Remove from Queue
+                    </Button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Hint when nothing selected */
+            <div style={{
+              padding: "32px", textAlign: "center",
+              color: "var(--text-secondary)", fontSize: "0.9rem",
+              border: "1px dashed #333", borderRadius: "0"
+            }}>
+              👆 Select a video from the queue to preview & edit
+            </div>
+          )}
+
+          {/* ── Tags (global — applies to all) ── */}
+          <div style={{ marginTop: '32px' }}>
+            <Select
+              label="Global Tags Settings"
               value={selectedTagTemplate}
               onChange={(e) => setSelectedTagTemplate(e.target.value)}
               disabled={isRunning || tagTemplates.every(t => !t)}
-              style={{
-                width: '100%',
-                padding: '10px 12px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                background: 'rgba(0, 0, 0, 0.2)',
-                color: '#fff',
-                fontFamily: 'inherit',
-                fontSize: '0.9rem',
-                cursor: isRunning || tagTemplates.every(t => !t) ? 'not-allowed' : 'pointer',
-                opacity: isRunning || tagTemplates.every(t => !t) ? 0.5 : 1,
-                outline: 'none'
-              }}
-            >
-              <option value="" style={{ color: '#000' }}>-- Select a Global Tag Template to apply --</option>
-              {tagTemplates.map((t, idx) => {
-                if (!t) return null;
-                return (
-                  <option key={`tag-${idx}`} value={t} style={{ color: '#000' }}>
-                    {t.length > 50 ? t.substring(0, 50) + '...' : t}
-                  </option>
-                );
-              })}
-            </select>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-              Select a tag template from your global settings. These tags will be injected into all the videos.
-            </span>
+              options={[
+                { value: "", label: "-- Select a Global Tag Template to apply --" },
+                ...tagTemplates.filter(t => !!t).map(t => ({
+                  value: t,
+                  label: t.length > 50 ? t.substring(0, 50) + '...' : t
+                }))
+              ]}
+            />
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginTop: '8px' }}>
+              These tags will be injected into all the videos in the queue.
+            </p>
           </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
+    </Card>
   );
 };

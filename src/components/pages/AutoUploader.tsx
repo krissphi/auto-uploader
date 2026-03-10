@@ -8,11 +8,15 @@ import { PLATFORMS } from "../icons/PlatformIcons";
 import { VideoEntry } from "../../types";
 import { selectFiles, runAutomation } from "../../services/tauriCommand";
 import { getDirectories, getDirectoryFiles } from "../../services/fileManager";
+import { RefreshButton } from "../shared/RefreshButton";
 
 import { GlobalSettings } from "../layout/GlobalSettings";
 import { VideoQueue } from "../layout/VideoQueue";
 import { ScheduleSettings } from "../layout/ScheduleSettings";
 import { LogConsole } from "../layout/LogConsole";
+import { Card } from "../shared/Card";
+import { Button } from "../shared/Button";
+import { Select } from "../shared/Inputs";
 
 const DEFAULT_TIMES = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
 const AVAILABLE_BROWSERS = ["Brave", "Chrome", "Edge"];
@@ -37,6 +41,7 @@ export const AutoUploader = () => {
 
   const [outputDir] = useStorage("output_dir", "Output");
   const [availableBatches, setAvailableBatches] = useState<string[]>([]);
+  const [isRefreshingBatches, setIsRefreshingBatches] = useState(false);
   const [selectedBatch, setSelectedBatch] = useState<string>("");
 
   useEffect(() => {
@@ -54,19 +59,28 @@ export const AutoUploader = () => {
     return () => { unlisten.then(f => f()); };
   }, []);
 
-  useEffect(() => {
-    const fetchBatches = async () => {
-      try {
-        const batchesPath = `${outputDir}\\batches`;
-        const dirs = await getDirectories(batchesPath);
-        setAvailableBatches(dirs);
-      } catch (err) {
-        console.error("No batches directory yet:", err);
-      }
-    };
-    if (outputDir) {
-      fetchBatches();
+  const fetchBatches = async () => {
+    setIsRefreshingBatches(true);
+    try {
+      const batchesPath = `${outputDir}\\batches`;
+      const dirs = await getDirectories(batchesPath);
+      setAvailableBatches(dirs);
+    } catch (err) {
+      console.error("No batches directory yet:", err);
+    } finally {
+      setIsRefreshingBatches(false);
     }
+  };
+
+  useEffect(() => {
+    if (outputDir) fetchBatches();
+  }, [outputDir]);
+
+  // Re-fetch batches when the window regains focus (e.g. user created a batch and switched back)
+  useEffect(() => {
+    const onFocus = () => { if (outputDir) fetchBatches(); };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, [outputDir]);
 
   const handleLoadBatch = async () => {
@@ -176,7 +190,7 @@ export const AutoUploader = () => {
 
   return (
     <div className="page-container">
-      <header className="header">
+      <header className="header" style={{ marginBottom: 0 }}>
         <h1>Auto Upload Scheduler</h1>
         <p>Schedule your short videos to YouTube, Instagram, TikTok & Facebook</p>
       </header>
@@ -190,43 +204,40 @@ export const AutoUploader = () => {
         togglePlatform={togglePlatform}
       />
 
-      <div className="card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2>Load Curated Batch</h2>
-            <p style={{ color: "var(--text-secondary)", fontSize: "0.85rem", marginTop: "4px" }}>Select a batch of predefined videos to load into the queue</p>
-          </div>
+      <Card 
+        title="Load Curated Batch" 
+        subtitle="Select a batch of predefined videos to load into the queue"
+        headerAction={
           <div style={{ display: 'flex', gap: '8px' }}>
-            <select
+            <Select
               value={selectedBatch}
               onChange={(e) => setSelectedBatch(e.target.value)}
               disabled={isRunning || availableBatches.length === 0}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                background: 'rgba(0, 0, 0, 0.2)',
-                color: '#fff',
-                fontFamily: 'inherit',
-                fontSize: '0.9rem',
-                outline: 'none',
-                minWidth: '200px'
-              }}
-            >
-              <option value="" disabled>-- Select a batch --</option>
-              {availableBatches.map(b => <option key={b} value={b}>{b}</option>)}
-            </select>
-            <button 
-              className="outline-btn" 
+              options={[
+                { value: "", label: "-- Select a batch --", disabled: true },
+                ...availableBatches.map(b => ({ value: b, label: b }))
+              ]}
+              style={{ minWidth: '220px' }}
+            />
+            <RefreshButton 
+              onClick={fetchBatches}
+              isRefreshing={isRefreshingBatches}
+              disabled={isRunning || isRefreshingBatches}
+              title="Refresh batch list"
+              size={20}
+              style={{ width: '48px', height: '48px' }}
+            />
+
+            <Button 
               onClick={handleLoadBatch}
               disabled={isRunning || !selectedBatch}
-              style={{ padding: '0 16px' }}
+              style={{ padding: '0 24px' }}
             >
                Load
-            </button>
+            </Button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       <VideoQueue 
         videos={videos}
@@ -247,7 +258,7 @@ export const AutoUploader = () => {
         toggleTime={toggleTime}
       />
 
-      <div className="card">
+      <Card>
         <LogConsole 
           logs={logs}
           logsEndRef={logsEndRef}
@@ -257,28 +268,28 @@ export const AutoUploader = () => {
 
         <div className="actions" style={{ marginTop: '20px' }}>
           {isSetup === null && (
-            <button className="btn-primary" disabled style={{ opacity: 0.6 }}>⏳ Checking setup...</button>
+            <Button disabled style={{ opacity: 0.6 }}>⏳ Checking setup...</Button>
           )}
           {isSetup === false && !isRunning && (
-            <button className="btn-primary" onClick={startSetup}>
+            <Button onClick={startSetup}>
               ⚙️ Setup Automation
-            </button>
+            </Button>
           )}
           {isSetup === false && isRunning && (
-            <button className="btn-primary" disabled style={{ opacity: 0.7 }}>⏳ Installing playwright-core...</button>
+            <Button disabled style={{ opacity: 0.7 }}>⏳ Installing playwright-core...</Button>
           )}
           {isSetup === true && !isRunning && (
-            <button className="btn-primary" onClick={startAutomation}>
-              🚀 Start Automation
-            </button>
+            <Button onClick={startAutomation}>
+              Start Auto Upload
+            </Button>
           )}
           {isSetup === true && isRunning && (
-            <button className="btn-danger" onClick={stopAutomation}>
+            <Button variant="danger" onClick={stopAutomation}>
               ⏹ Stop Execution
-            </button>
+            </Button>
           )}
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

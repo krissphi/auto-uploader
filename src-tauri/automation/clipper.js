@@ -350,8 +350,8 @@ async function main() {
                 // Video utama di atas (Layar atas)
                 let halfH = Math.round(tH / 2);
                 vf = `[0:v]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[top];`;
-                // Video B-Roll ASMR di bawah (Layar bawah) - menggunakan input stream kedua (1:v)
-                vf += `[1:v]scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom];`;
+                // Video B-Roll ASMR di bawah (Layar bawah) - kecepatan 1.5x lipat agar lebih dinamis
+                vf += `[1:v]setpts=PTS/1.5,scale=${tW}:${halfH}:force_original_aspect_ratio=increase,crop=${tW}:${halfH}[bottom];`;
                 vf += `[top][bottom]vstack[base]`;
             } else if (effectiveScaleMode.includes("Dual Split")) {
                 let leftWidth = `iw*0.60`;

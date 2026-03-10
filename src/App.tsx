@@ -10,8 +10,18 @@ import { FilesPage } from "./components/pages/Files";
 import { SettingsPage } from "./components/pages/Settings";
 import { BRollManager } from "./components/pages/BRollManager";
 
+// Pages that have been visited at least once — they stay mounted to preserve state,
+// but are hidden when not active. Pages never visited are never mounted at all.
+type MountedSet = Partial<Record<PageKey, true>>;
+
 function App() {
   const [currentPage, setCurrentPage] = useState<PageKey>('auto-clipper');
+  const [mounted, setMounted] = useState<MountedSet>({ 'auto-clipper': true });
+
+  const navigate = (page: PageKey) => {
+    setCurrentPage(page);
+    setMounted(prev => ({ ...prev, [page]: true }));
+  };
 
   useEffect(() => {
     const checkDeps = async () => {
@@ -32,26 +42,19 @@ function App() {
     checkDeps();
   }, []);
 
+  const show = (page: PageKey) => ({ display: currentPage === page ? 'block' : 'none', height: '100%' } as const);
+
   return (
     <div className="app-layout">
-      <Sidebar currentPage={currentPage} setPage={setCurrentPage} />
-      
+      <Sidebar currentPage={currentPage} setPage={navigate} />
+
       <main className="main-content">
-        <div style={{ display: currentPage === 'auto-clipper' ? 'block' : 'none', height: '100%' }}>
-          <AutoClipper />
-        </div>
-        <div style={{ display: currentPage === 'auto-uploader' ? 'block' : 'none', height: '100%' }}>
-          <AutoUploader />
-        </div>
-        <div style={{ display: currentPage === 'broll-manager' ? 'block' : 'none', height: '100%' }}>
-          <BRollManager />
-        </div>
-        <div style={{ display: currentPage === 'files' ? 'block' : 'none', height: '100%' }}>
-          <FilesPage />
-        </div>
-        <div style={{ display: currentPage === 'settings' ? 'block' : 'none', height: '100%' }}>
-          <SettingsPage />
-        </div>
+        {/* Each page is only mounted (and its useEffects run) the first time the user visits it */}
+        {mounted['auto-clipper']   && <div style={show('auto-clipper')}><AutoClipper /></div>}
+        {mounted['auto-uploader']  && <div style={show('auto-uploader')}><AutoUploader /></div>}
+        {mounted['broll-manager']  && <div style={show('broll-manager')}><BRollManager /></div>}
+        {mounted['files']          && <div style={show('files')}><FilesPage /></div>}
+        {mounted['settings']       && <div style={show('settings')}><SettingsPage /></div>}
       </main>
     </div>
   );

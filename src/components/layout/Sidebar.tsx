@@ -1,4 +1,5 @@
 
+import { ScissorsIcon, FolderIcon, UploadIcon, MovieIcon, SettingsIcon } from "../shared/Icons";
 
 export type PageKey = 'auto-clipper' | 'auto-uploader' | 'files' | 'settings' | 'broll-manager';
 
@@ -8,12 +9,12 @@ interface SidebarProps {
 }
 
 export const Sidebar = ({ currentPage, setPage }: SidebarProps) => {
-  const menuItems: { id: PageKey; label: string; icon: string }[] = [
-    { id: 'auto-clipper', label: 'Auto Clipper', icon: '✂️' },
-    { id: 'auto-uploader', label: 'Auto Uploader', icon: '🚀' },
-    { id: 'broll-manager', label: 'B-Roll Assets', icon: '🎞️' },
-    { id: 'files', label: 'Files & Batches', icon: '📁' },
-    { id: 'settings', label: 'Settings', icon: '⚙️' },
+  const menuItems: { id: PageKey; label: string; icon: React.ReactNode }[] = [
+    { id: 'auto-clipper', label: 'Get Clip', icon: <ScissorsIcon size={18} /> },
+    { id: 'files', label: 'Manage Video', icon: <FolderIcon size={18} /> },
+    { id: 'auto-uploader', label: 'Schedule Upload', icon: <UploadIcon size={18} /> },
+    { id: 'broll-manager', label: 'B-Roll Asset', icon: <MovieIcon size={18} /> },
+    { id: 'settings', label: 'Settings', icon: <SettingsIcon size={18} /> },
   ];
 
   return (

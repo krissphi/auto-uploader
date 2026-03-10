@@ -345,7 +345,7 @@ fn remove_dir_all(path: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: String, state: State<'_, BrollState>) -> Result<(), String> {
+fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: String, category: String, quality: String, state: State<'_, BrollState>) -> Result<(), String> {
     // Resolve output dir: jika relative, gunakan parent dari cwd (project root, bukan src-tauri)
     let base_dir = if std::path::Path::new(&output_dir).is_absolute() {
         std::path::PathBuf::from(&output_dir)
@@ -385,9 +385,15 @@ fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: S
         "Relaxing ASMR calligraphy no copyright"
     ];
     
-    // Pilih keyword random berdasar probabilitas pseudo-acak pakai timestamp
-    let rand_idx = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize % keywords.len();
-    let keyword = keywords[rand_idx];
+    let keyword = if category.to_lowercase() == "random" || category.is_empty() {
+        // Pilih keyword random berdasar probabilitas pseudo-acak pakai timestamp
+        let rand_idx = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as usize % keywords.len();
+        keywords[rand_idx].to_string()
+    } else {
+        // Construct a safe search query based on category
+        format!("{} satisfying gameplay no copyright background", category)
+    };
+
     // Pool 5x dari jumlah yang diminta agar ada cukup kandidat yang lolos filter durasi
     let pool_size = std::cmp::min(count * 5, 25);
     let search_query = format!("ytsearch{}:{}", pool_size, keyword);
@@ -395,10 +401,14 @@ fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: S
     let ytdlp_exe = if yt_dlp_path.trim().is_empty() { "yt-dlp".to_string() } else { yt_dlp_path };
     let mut cmd = Command::new(&ytdlp_exe);
     
+    // Get numeric height part (e.g. "720p" -> "720")
+    let height = quality.replace("p", "");
+    let format_selection = format!("height:{},+size", height);
+
     // Durasi tidak dibatasi, tapi kita paksa potong menit 1-11 saja (10 menit)
     // Ini jauh lebih efisien: video berjam-jam pun hanya didownload 10 menitnya
     cmd.arg("-f").arg("bestvideo")
-       .arg("-S").arg("height:720,+size") // Prefer 720p, fallback ke resolusi terdekat
+       .arg("-S").arg(&format_selection) // Prefer requested resolution, fallback to closest
        .arg("--download-sections").arg("*60-660") // Menit 1 (60 detik) sampai Menit 11 (660 detik)
        .arg("--force-keyframes-at-cuts")
        .arg("--merge-output-format").arg("mp4")
@@ -437,9 +447,11 @@ fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: S
         let reader = BufReader::new(stdout);
         for line in reader.lines() {
             if let Ok(line) = line {
-                // Jangan log progres bar kasar bawaan yt-dlp jika dirasa terlalu berisik, 
-                // tapi kita tampilkan agar user tahu downlod berjalan
-                let _ = app_clone.emit("log", line);
+                let low = line.to_lowercase();
+                // Filter out verbose ffmpeg progress updates
+                if !low.contains("frame=") && !low.contains("fps=") && !low.contains("bitrate=") {
+                    let _ = app_clone.emit("log", line);
+                }
             }
         }
         let _ = app_clone.emit("log", "[B-Roll] Massive scraper download finished successfully.");
@@ -453,7 +465,9 @@ fn download_broll(app: AppHandle, count: i32, yt_dlp_path: String, output_dir: S
         for line in reader.lines() {
             if let Ok(line) = line {
                 let upper = line.to_uppercase();
-                if upper.contains("ERROR") || upper.contains("WARNING") || upper.contains("[DOWNLOAD]") {
+                // Only show errors, warnings or key download markers, but skip the frame/fps spam
+                if (upper.contains("ERROR") || upper.contains("WARNING") || upper.contains("[DOWNLOAD]")) 
+                   && !upper.contains("FRAME=") && !upper.contains("FPS=") {
                     let _ = app_clone.emit("log_error", format!("[yt-dlp] {}", line));
                 }
             }

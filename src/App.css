@@ -1,16 +1,17 @@
 :root {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   color-scheme: dark;
-  --bg-main: #0f111a;
-  --bg-card: #181b28;
-  --bg-card-hover: #1f2333;
-  --text-primary: #f0f0f5;
-  --text-secondary: #9aa0b8;
-  --accent: #6b4cff;
-  --accent-hover: #8367ff;
-  --border-color: #2b3040;
-  --success: #10b981;
-  --danger: #ef4444;
+  --bg-main: #121212;
+  --bg-card: #181818;
+  --bg-card-hover: #282828;
+  --text-primary: #FFFFFF;
+  --text-secondary: #B3B3B3;
+  --accent: #1DB954;
+  --accent-hover: #1ED760;
+  --border-color: #333333;
+  --success: #1DB954;
+  --danger: #E91429;
+  --padding-page: 32px;
 }
 
 body {
@@ -86,9 +87,9 @@ body {
 }
 
 .sidebar-link.active {
-  background: rgba(107, 76, 255, 0.1);
+  background: var(--bg-card-hover);
   color: var(--accent);
-  border-right: 3px solid var(--accent);
+  border-right: 4px solid var(--accent);
 }
 
 .main-content {
@@ -98,12 +99,12 @@ body {
 }
 
 .page-container {
-  max-width: 900px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: var(--padding-page);
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
 .header {
@@ -129,14 +130,14 @@ body {
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 0;
   padding: 1.5rem;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: transform 0.2s, background-color 0.2s;
 }
 
 .card:hover {
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  border-color: #3b4055;
+  background-color: var(--bg-card-hover);
+  border-color: #444;
 }
 
 .card h2 {
@@ -164,18 +165,23 @@ body {
 }
 
 select, input[type="text"], input[type="file"], input[type="number"], .form-control {
-  background: var(--bg-main);
+  background: #242424;
   border: 1px solid var(--border-color);
   color: var(--text-primary);
   padding: 0 1rem;
-  height: 46px;
+  height: 48px;
   box-sizing: border-box;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 1rem;
   outline: none;
   font-family: inherit;
   transition: border-color 0.2s;
   width: 100%;
+}
+
+option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
 }
 
 select:focus, input:focus, .form-control:focus-within {
@@ -199,11 +205,11 @@ select:focus, input:focus, .form-control:focus-within {
 }
 
 .toggle-btn {
-  background: var(--bg-main);
+  background: #242424;
   border: 1px solid var(--border-color);
   color: var(--text-secondary);
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.2s;
@@ -215,9 +221,9 @@ select:focus, input:focus, .form-control:focus-within {
 }
 
 .toggle-btn.active {
-  background: rgba(107, 76, 255, 0.1);
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: #000;
 }
 
 .toggle-btn:hover:not(.active) {
@@ -233,10 +239,10 @@ select:focus, input:focus, .form-control:focus-within {
 }
 
 .video-item {
-  background: var(--bg-main);
+  background: #1e1e1e;
   border: 1px solid var(--border-color);
-  padding: 0.75rem;
-  border-radius: 8px;
+  padding: 0.85rem;
+  border-radius: 0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -264,15 +270,18 @@ select:focus, input:focus, .form-control:focus-within {
 }
 
 .btn-primary, .btn-danger {
-  padding: 1rem 2rem;
+  padding: 0 2rem;
+  height: 48px;
   border: none;
-  border-radius: 8px;
+  border-radius: 0;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   flex: 1;
   outline: none;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .btn-primary {
@@ -282,8 +291,7 @@ select:focus, input:focus, .form-control:focus-within {
 
 .btn-primary:hover:not(:disabled) {
   background: var(--accent-hover);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(107, 76, 255, 0.3);
+  transform: scale(1.02);
 }
 
 .btn-primary:active:not(:disabled) {
@@ -302,17 +310,40 @@ select:focus, input:focus, .form-control:focus-within {
   border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
-.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.2);
+.btn-ghost-danger {
+  background: rgba(248, 113, 113, 0.05);
+  color: #f87171;
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  padding: 0 10px;
+  height: 30px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-ghost-danger:hover {
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.5);
+}
+
+.btn-ghost-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Status logs */
 .logs-container {
-  background: #090a0f;
+  background: #000;
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 0;
   padding: 1rem;
-  height: 200px;
+  height: 250px;
   overflow-y: auto;
   font-family: 'Consolas', monospace;
   font-size: 0.85rem;
@@ -326,3 +357,11 @@ select:focus, input:focus, .form-control:focus-within {
 .log-item.success { color: var(--success); }
 .log-item.error { color: var(--danger); }
 .log-item.warning { color: #fbbf24; }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}

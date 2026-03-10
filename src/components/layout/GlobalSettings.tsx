@@ -1,4 +1,7 @@
 import { PLATFORMS } from "../icons/PlatformIcons";
+import { Card } from "../shared/Card";
+import { Select } from "../shared/Inputs";
+import { Button } from "../shared/Button";
 
 interface GlobalSettingsProps {
   browser: string;
@@ -18,37 +21,32 @@ export const GlobalSettings = ({
   togglePlatform
 }: GlobalSettingsProps) => {
   return (
-    <div className="card">
-        <h2>1. Global Settings</h2>
-        <div className="form-group" style={{ marginBottom: '16px' }}>
-          <label htmlFor="browser">Browser Selector</label>
-          <select 
-            id="browser" 
-            value={browser} 
-            onChange={(e) => setBrowser(e.target.value)}
-            disabled={isRunning}
-          >
-            {availableBrowsers.map(b => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-        </div>
+    <Card title="1. Global Settings">
+        <Select
+          label="Browser Selector"
+          value={browser} 
+          onChange={(e) => setBrowser(e.target.value)}
+          disabled={isRunning}
+          options={availableBrowsers.map(b => ({ value: b, label: b }))}
+          style={{ marginBottom: '24px' }}
+        />
         
         <div className="form-group">
           <label>Target Platforms</label>
           <div className="platforms-grid">
             {PLATFORMS.map(p => (
-              <button
+              <Button
                 key={p.id}
-                className={`toggle-btn ${selectedPlatforms.includes(p.id) ? 'active' : ''}`}
+                variant="outline"
+                className={selectedPlatforms.includes(p.id) ? 'active' : ''}
                 onClick={() => togglePlatform(p.id)}
                 disabled={isRunning}
               >
                 {p.name}
-              </button>
+              </Button>
             ))}
           </div>
         </div>
-    </div>
+    </Card>
   );
 };

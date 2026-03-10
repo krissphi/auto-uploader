@@ -69,7 +69,7 @@ export const SettingsPage = () => {
 
     return (
         <div className="page-container">
-            <header className="header">
+            <header className="header" style={{ marginBottom: 0 }}>
                 <h1>Settings</h1>
                 <p>Configure CLI tools and application preferences</p>
             </header>
@@ -85,7 +85,7 @@ export const SettingsPage = () => {
                      <div style={{ display: "flex", gap: "10px" }}>
                         <input 
                             type="text" 
-                            style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
+                            style={{ flex: 1, padding: "10px", borderRadius: "0px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
                             value={ytDlpPath}
                             onChange={(e) => setYtDlpPath(e.target.value)}
                             placeholder="e.g. C:\tools\yt-dlp.exe or just yt-dlp"
@@ -99,7 +99,7 @@ export const SettingsPage = () => {
                      <div style={{ display: "flex", gap: "10px" }}>
                         <input 
                             type="text" 
-                            style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
+                            style={{ flex: 1, padding: "10px", borderRadius: "0px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
                             value={ffmpegPath}
                             onChange={(e) => setFfmpegPath(e.target.value)}
                             placeholder="e.g. C:\tools\ffmpeg\bin\ffmpeg.exe or just ffmpeg"
@@ -113,7 +113,7 @@ export const SettingsPage = () => {
                      <div style={{ display: "flex", gap: "10px" }}>
                         <input 
                             type="text" 
-                            style={{ flex: 1, padding: "10px", borderRadius: "6px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
+                            style={{ flex: 1, padding: "10px", borderRadius: "0px", border: "1px solid var(--border-color)", background: "var(--bg-main)", color: "var(--text-primary)" }}
                             value={outputDir}
                             onChange={(e) => setOutputDir(e.target.value)}
                             placeholder="e.g. Output (relative) or C:\Clips (absolute)"
@@ -143,7 +143,7 @@ export const SettingsPage = () => {
                             value={template}
                             onChange={(e) => handleTitleTemplateChange(idx, e.target.value)}
                             style={{
-                                flex: 1, padding: '10px 12px', borderRadius: '6px',
+                                flex: 1, padding: '10px 12px', borderRadius: 0,
                                 border: '1px solid rgba(255, 255, 255, 0.2)',
                                 background: 'rgba(0, 0, 0, 0.2)', color: '#fff', fontFamily: 'inherit', fontSize: '0.9rem'
                             }}
@@ -166,8 +166,8 @@ export const SettingsPage = () => {
                         <button
                         onClick={addTitleTemplate}
                         style={{
-                            background: 'rgba(107, 76, 255, 0.1)', border: '1px dashed var(--accent)', color: 'var(--accent)',
-                            padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content'
+                            background: 'rgba(29, 185, 84, 0.1)', border: '1px dashed var(--accent)', color: 'var(--accent)',
+                            padding: '8px', borderRadius: 0, cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content'
                         }}
                         >
                         + Add Another Template
@@ -187,7 +187,7 @@ export const SettingsPage = () => {
                             value={template}
                             onChange={(e) => handleTagTemplateChange(idx, e.target.value)}
                             style={{
-                                flex: 1, padding: '10px 12px', borderRadius: '6px',
+                                flex: 1, padding: '10px 12px', borderRadius: 0,
                                 border: '1px solid rgba(255, 255, 255, 0.2)',
                                 background: 'rgba(0, 0, 0, 0.2)', color: '#fff', fontFamily: 'inherit', fontSize: '0.9rem',
                                 minHeight: '60px', resize: 'vertical'
@@ -211,8 +211,8 @@ export const SettingsPage = () => {
                         <button
                         onClick={addTagTemplate}
                         style={{
-                            background: 'rgba(107, 76, 255, 0.1)', border: '1px dashed var(--accent)', color: 'var(--accent)',
-                            padding: '8px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content'
+                            background: 'rgba(29, 185, 84, 0.1)', border: '1px dashed var(--accent)', color: 'var(--accent)',
+                            padding: '8px', borderRadius: 0, cursor: 'pointer', fontSize: '0.9rem', width: 'fit-content'
                         }}
                         >
                         + Add Another Tag Template

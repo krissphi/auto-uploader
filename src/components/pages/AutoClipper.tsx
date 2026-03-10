@@ -201,7 +201,7 @@ export const AutoClipper = () => {
                 <div className="actions" style={{ marginTop: '20px' }}>
                 {!isRunning ? (
                     <button className="btn-primary" onClick={startProcessing}>
-                        ✂️ Start Clipping Pipeline
+                        Start Clipping Video
                     </button>
                 ) : (
                     <button className="btn-danger" onClick={stopProcessing}>
